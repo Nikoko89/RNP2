@@ -17,6 +17,7 @@ public class PropReader {
             if (inputStream != null) {
                 prop.load(inputStream);
             } else {
+                prop = null;
                 throw new FileNotFoundException("property file '" + fileName + "' not found in the classpath");
             }
 
