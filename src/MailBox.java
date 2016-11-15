@@ -51,13 +51,11 @@ public class MailBox {
             folder = store.getFolder( "INBOX" );
             folder.open( Folder.READ_ONLY );
             messages = folder.getMessages();
+            folder.close(false);
+            store.close();
         } catch (MessagingException e) {
             System.err.println("Could not open folder");
         }
-
         accountMails.put(acc, messages);
-
-
-
     }
 }

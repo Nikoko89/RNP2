@@ -2,7 +2,6 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="0225a3ea-d284-49f9-9f51-b5196fa4c04e" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/MailAccount.java" afterPath="$PROJECT_DIR$/src/MailAccount.java" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/MailBox.java" afterPath="$PROJECT_DIR$/src/MailBox.java" />
     </list>
     <ignored path="RNP2.iws" />
@@ -65,8 +64,8 @@
       <file leaf-file-name="MailBox.java" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/MailBox.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="116">
-              <caret line="29" column="15" selection-start-line="29" selection-start-column="15" selection-end-line="29" selection-end-column="15" />
+            <state relative-caret-position="566">
+              <caret line="58" column="40" selection-start-line="58" selection-start-column="40" selection-end-line="58" selection-end-column="40" />
               <folding>
                 <element signature="imports" expanded="true" />
               </folding>
@@ -684,8 +683,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/MailBox.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="116">
-          <caret line="29" column="15" selection-start-line="29" selection-start-column="15" selection-end-line="29" selection-end-column="15" />
+        <state relative-caret-position="566">
+          <caret line="58" column="40" selection-start-line="58" selection-start-column="40" selection-end-line="58" selection-end-column="40" />
           <folding>
             <element signature="imports" expanded="true" />
           </folding>
