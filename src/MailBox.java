@@ -4,15 +4,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
-import java.util.*;
-
 import javax.mail.*;
 
 
 public class MailBox {
     private List<MailAccount> accounts;
-    private Message[] messages;
-    private HashMap<MailAccount, Message[]> accountMails = new HashMap<>();
+    private ArrayList<Message> msg;
 
     public MailBox() {
         accounts = new ArrayList<>();
@@ -51,22 +48,25 @@ public class MailBox {
         try {
             folder = store.getFolder( "INBOX" );
             folder.open( Folder.READ_ONLY );
-            messages = folder.getMessages();
+            Message[] messages = folder.getMessages();
+            for (int i = 0; i < messages.length; i++){
+                msg.add(messages[i]);
+            }
             folder.close(false);
             store.close();
         } catch (MessagingException e) {
             System.err.println("Could not open folder");
         }
-        accountMails.put(acc, messages);
     }
 
     public void accountsMessages(){
+        msg = new ArrayList<>();
         for(MailAccount acc: accounts){
             fetchMails(acc);
         }
     }
 
-    public HashMap<MailAccount, Message[]> getAccountMails(){
-        return accountMails;
+    public ArrayList<Message> getAllMails(){
+        return msg;
     }
 }
