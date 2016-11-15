@@ -3,11 +3,11 @@ import javax.mail.Session;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
-import java.io.*;
+
 import java.util.*;
-import javax.activation.*;
+
 import javax.mail.*;
-import javax.mail.internet.*;
+
 
 public class MailBox {
     private List<MailAccount> accounts;
@@ -25,6 +25,7 @@ public class MailBox {
             MailAccount account = new MailAccount(user, pass, serverAdress, port);
             accounts.add(account);
         }
+        accountsMessages();
     }
 
     public void fetchMails(MailAccount acc) {
@@ -57,5 +58,15 @@ public class MailBox {
             System.err.println("Could not open folder");
         }
         accountMails.put(acc, messages);
+    }
+
+    public void accountsMessages(){
+        for(MailAccount acc: accounts){
+            fetchMails(acc);
+        }
+    }
+
+    public HashMap<MailAccount, Message[]> getAccountMails(){
+        return accountMails;
     }
 }
