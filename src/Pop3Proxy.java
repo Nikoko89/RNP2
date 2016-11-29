@@ -21,10 +21,12 @@ public class Pop3Proxy {
     private List<ProxyHelper> listenerSockets;
     private final int MAX_CLIENTS;
 
-    public Pop3Proxy(String user, String pass, int port) {
-        this.user = user;
-        this.pass = pass;
-        this.port = port;
+    public Pop3Proxy() {
+        PropReader prop = new PropReader("pop3.properties");
+        Properties pop3 = prop.getProp();
+        this.user = pop3.getProperty("user");
+        this.pass = pop3.getProperty("password");
+        this.port = Integer.valueOf(pop3.getProperty("port"));
         mailBox = new MailBox();
         allMsgs = mailBox.getAllMails();
         MAX_CLIENTS = 3;
