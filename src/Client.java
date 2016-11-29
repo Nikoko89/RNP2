@@ -10,21 +10,20 @@ public class Client extends Thread {
     private String host;
     private String port;
 
-    private Client(String host, String port) {
-        this.host = host;
-        this.port = port;
+    private Client() {
+        this.host = "127.0.0.1";
+        this.port = "11000";
     }
 
     public void run() {
         try {
-            clientSocket.setKeepAlive(true);
-        } catch (SocketException e) {
-            System.err.println("Could not set to keep the socket alive");
-        }
-
-        try {
 
             clientSocket = new Socket(host, Integer.parseInt(port));
+            try {
+                clientSocket.setKeepAlive(true);
+            } catch (SocketException e) {
+                System.err.println("Could not set to keep the socket alive");
+            }
             clientSocket.setSoTimeout(3000);
 
             //Nachricht vom Client an den Server
@@ -81,10 +80,8 @@ public class Client extends Thread {
     }
 
     public static void main(String[] args) {
-        if (args.length != 2) {
-            System.err.println("Argumente betrachten!");
-        }
-        Thread clientthread = new Client(args[0], args[1]);
+
+        Thread clientthread = new Client();
         clientthread.run();
 
     }

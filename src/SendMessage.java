@@ -38,6 +38,7 @@ public class SendMessage {
         try {
 
             Message message = new MimeMessage(session);
+            message.setHeader("Content-type", "text/HTML; charset=UTF-8");
             message.setFrom(new InternetAddress(userName));
             message.setRecipients(Message.RecipientType.TO,
                     InternetAddress.parse(receipent));

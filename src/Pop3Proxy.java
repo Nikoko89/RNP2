@@ -1,13 +1,12 @@
-
+import javax.mail.Flags;
 import javax.mail.Message;
+import javax.mail.MessagingException;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 public class Pop3Proxy {
 
@@ -66,7 +65,7 @@ public class Pop3Proxy {
         private Socket clientSocket = null;
         private InputStream inputStream;
         private InputStreamReader inputStreamReader;
-        private BufferedReader buffereReader;
+        private BufferedReader bufferedReader;
 
         private OutputStream outputStream;
         private OutputStreamWriter outputStreamWriter;
@@ -89,11 +88,12 @@ public class Pop3Proxy {
             try {
                 inputStream = clientSocket.getInputStream();
                 inputStreamReader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
-                buffereReader = new BufferedReader(inputStreamReader);
+                bufferedReader = new BufferedReader(inputStreamReader);
 
                 outputStream = clientSocket.getOutputStream();
                 outputStreamWriter = new OutputStreamWriter(outputStream, StandardCharsets.UTF_8);
                 write("+OK POP3 server ready");
+                authenticate();
 
 
             } catch (IOException e) {
@@ -104,7 +104,7 @@ public class Pop3Proxy {
 
         private void authenticate() {
             try {
-                String input = buffereReader.readLine();
+                String input = bufferedReader.readLine();
 
                 if (input.contains("CAPA") || input.contains("AUTH")) {
                     capa();
@@ -113,10 +113,11 @@ public class Pop3Proxy {
                     if (userName[1].equals(user)) {
                         write("+OK Please enter password");
 
-                        input = buffereReader.readLine();
+                        input = bufferedReader.readLine();
                         String[] password = input.split(" ");
                         if (password[1].equals(pass)) {
                             write("+OK mailbox locked and ready");
+                            transaction();
                         } else {
                             write("-ERR Wrong Password");
                         }
@@ -137,22 +138,113 @@ public class Pop3Proxy {
 
         private synchronized void transaction() {
 
-
             while(alive) {
                 try {
-                    String inputLine = buffereReader.readLine();
+                    String inputLine = bufferedReader.readLine();
                     String[] inputArray = inputLine.split(" ");
-
-                    switch (inputArray[0]) {
-                        case "USER":
+                    int octetSize = 0;
+                    int messageAmount = 0;
+                    for (Message msg : allMsgs) {
+                        if (msg.getFlags().contains(Flags.Flag.DELETED)) {
                             break;
-                        case "Hey":
+                        }
+                        try {
+                            octetSize += msg.getSize();
+                            messageAmount++;
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    int cursor;
+                    switch (inputArray[0]) {
+                        case "STAT":
+                            write("+OK " + messageAmount + " " + octetSize + "\n");
+                            break;
+
+                        case "LIST":
+                            if (inputArray[1] == null) {
+                                write("+OK " + messageAmount + "messages  (" + octetSize + ")\n");
+
+                                for (cursor = 0; cursor < messageAmount; cursor++) {
+                                    write("" + (cursor+1) + " " + allMsgs.get(cursor).getSize() + "\n");
+                                }
+                            } else {
+                                cursor = Integer.parseInt(inputArray[1]);
+                                if (allMsgs.get(cursor-1) == null || isFlagSet(cursor-1)) {
+                                    write("-ERR no such message, only " + messageAmount + " messages in maildrop");
+                                }
+                                write("+OK " + cursor + " " + allMsgs.get(cursor-1).getSize() + "\n");
+                            }
+                            break;
+
+                        case "RETR":
+                            if (inputArray[1] == null) {
+                                write("-ERR pls enter message");
+                            } else {
+                                cursor = Integer.parseInt(inputArray[1]);
+                                if (allMsgs.get(cursor-1) == null || isFlagSet(cursor-1)) {
+                                    write("-ERR no such message, only " + messageAmount + " messages in maildrop");
+                                } else {
+                                    write("+OK " + allMsgs.get(cursor-1).getSize() + " octets\n");
+                                    write(allMsgs.get(cursor-1).getContent().toString());
+                                }
+                            }
+                            break;
+
+                        case "DELE":
+                            if (inputArray[1] == null) {
+                                write("-ERR pls enter message");
+                            } else {
+                                cursor = Integer.parseInt(inputArray[1]);
+                                if (allMsgs.get(cursor-1) == null) {
+                                    write("-ERR no such message, only " + messageAmount + " messages in maildrop");
+                                } else if (isFlagSet(cursor-1)) {
+                                    write("-ERR message " + cursor + " already deleted");
+                                } else {
+                                    allMsgs.get(cursor-1).setFlag(Flags.Flag.DELETED, true);
+                                    write("+OK message " + cursor + " deleted");
+                                    allMsgs.sort((m1, m2) -> {
+                                        int result = 0;
+                                        try {
+
+                                            if (m2.getFlags().contains(Flags.Flag.DELETED)) {
+                                                result = -1 ;
+                                            }
+                                        } catch (MessagingException e) {
+                                            e.printStackTrace();
+                                        }
+                                        return result;
+                                    });
+                                }
+                            }
+                            break;
+
+                        case "NOOP":
+                            write("+OK");
+                            break;
+
+                        case "RSET":
+                            for (Message msg : allMsgs) {
+                                if (msg.getFlags().contains(Flags.Flag.DELETED)) {
+                                    msg.getFlags().remove(Flags.Flag.DELETED);
+                                }
+                            }
+                            write("+OK maildrop has " + allMsgs.size() + " messages");
+                            break;
+
+                        case "QUIT":
+                            update();
+                            break;
                     }
 
-                } catch (IOException e){
+                } catch (Exception e){
                     e.printStackTrace();
                 }
             }
+        }
+
+        private synchronized void update() {
+
         }
 
         private void write(String line) {
@@ -163,6 +255,18 @@ public class Pop3Proxy {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        }
+
+        private boolean isFlagSet(int index) {
+            boolean result = false;
+            try {
+                if (allMsgs.get(index).getFlags().contains(Flags.Flag.DELETED)) {
+                    result = true;
+                }
+            } catch (MessagingException e) {
+                e.printStackTrace();
+            }
+            return result;
         }
 
     }
