@@ -28,7 +28,7 @@ public class Pop3ProxyClient extends Thread{
 
     public void run() {
         try {
-            clientSocket = new Socket("127.0.0.1", port);
+            clientSocket = new Socket(server, port);
 
             outputStream = clientSocket.getOutputStream();
             outputStreamWriter = new OutputStreamWriter(outputStream, StandardCharsets.UTF_8);
@@ -37,7 +37,7 @@ public class Pop3ProxyClient extends Thread{
             bufferedReader = new BufferedReader(inputStreamReader);
 
             authToMailServer();
-
+            checkInbox();
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -51,7 +51,7 @@ public class Pop3ProxyClient extends Thread{
 
     }
 
-    public void getMails() {
+    public void checkInbox() {
         String[] inputArray = writeAndRead("STAT").split(" ");
         int mailboxSize = Integer.parseInt(inputArray[1]);
 
