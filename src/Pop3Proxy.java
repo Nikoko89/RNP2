@@ -128,6 +128,8 @@ public class Pop3Proxy {
                         write("-ERR wrong username");
                     }
 
+                } else if (input.contains("QUIT")) {
+                    write("+OK dewey POP3 server signing off");
                 }
             } catch (IOException e) {
                 e.printStackTrace();
