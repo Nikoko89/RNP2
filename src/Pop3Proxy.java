@@ -235,6 +235,8 @@ public class Pop3Proxy {
                             break;
 
                         case "QUIT":
+                            alive = false;
+                            
                             update();
                             break;
                     }
@@ -246,7 +248,17 @@ public class Pop3Proxy {
         }
 
         private synchronized void update() {
+            for(int i = 0; i < allMsgs.size(); i++) {
+                if (isFlagSet(i)) {
+                    allMsgs.remove(i);
+                }
+            }
 
+            if (allMsgs.isEmpty()) {
+                write("+OK dewey POP3 server signing off (maildrop empty)");
+            } else {
+                write("+OK dewey POP3 server signing off (" + allMsgs.size() + " messages left)");
+            }
         }
 
         private void write(String line) {
