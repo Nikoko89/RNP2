@@ -31,7 +31,7 @@ public class SendMessage {
         Session session = Session.getInstance(props,
                 new javax.mail.Authenticator() {
                     protected PasswordAuthentication getPasswordAuthentication() {
-                        return new PasswordAuthentication(userName, password);
+                        return new PasswordAuthentication("praktikum", password);
                     }
                 });
 

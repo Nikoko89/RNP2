@@ -25,12 +25,11 @@ public class Pop3Proxy {
         PropReader prop = new PropReader("pop3.properties");
         Properties pop3 = prop.getProp();
         this.user = pop3.getProperty("user");
-        System.out.println(user);
         this.pass = pop3.getProperty("password");
-        System.out.println(pass);
-        this.port = Integer.valueOf(pop3.getProperty("port"));
+        this.port = Integer.parseInt(pop3.getProperty("port"));
         mailBox = new MailBox();
         allMsgs = mailBox.getAllMails();
+        System.out.println(allMsgs.size());
         MAX_CLIENTS = 3;
         listenerSockets = new ArrayList<>();
         startServer();
@@ -164,22 +163,22 @@ public class Pop3Proxy {
                     int cursor;
                     switch (inputArray[0]) {
                         case "STAT":
-                            write("+OK " + messageAmount + " " + octetSize + "\n");
+                            write("+OK " + messageAmount + " " + octetSize);
                             break;
 
                         case "LIST":
                             if (inputArray[1] == null) {
-                                write("+OK " + messageAmount + "messages  (" + octetSize + ")\n");
+                                write("+OK " + messageAmount + "messages  (" + octetSize + ")");
 
                                 for (cursor = 0; cursor < messageAmount; cursor++) {
-                                    write("" + (cursor+1) + " " + allMsgs.get(cursor).getSize() + "\n");
+                                    write("" + (cursor+1) + " " + allMsgs.get(cursor).getSize());
                                 }
                             } else {
                                 cursor = Integer.parseInt(inputArray[1]);
                                 if (allMsgs.get(cursor-1) == null || isFlagSet(cursor-1)) {
                                     write("-ERR no such message, only " + messageAmount + " messages in maildrop");
                                 }
-                                write("+OK " + cursor + " " + allMsgs.get(cursor-1).getSize() + "\n");
+                                write("+OK " + cursor + " " + allMsgs.get(cursor-1).getSize());
                             }
                             break;
 
@@ -191,7 +190,7 @@ public class Pop3Proxy {
                                 if (allMsgs.get(cursor-1) == null || isFlagSet(cursor-1)) {
                                     write("-ERR no such message, only " + messageAmount + " messages in maildrop");
                                 } else {
-                                    write("+OK " + allMsgs.get(cursor-1).getSize() + " octets\n");
+                                    write("+OK " + allMsgs.get(cursor-1).getSize() + " octets");
                                     write(allMsgs.get(cursor-1).getContent().toString());
                                 }
                             }

@@ -46,7 +46,7 @@ public class Client extends Thread {
 
                 //Nachricht senden
                 if (System.in.available() > 0) {
-                    String eingabe = userInput.readLine() + '\n';
+                    String eingabe = userInput.readLine();
                     System.out.println("eingabe gelesen");
                     bufferedWriter.write(eingabe);
                     System.out.println("eingabe gesendet");
