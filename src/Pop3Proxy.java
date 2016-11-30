@@ -240,6 +240,9 @@ public class Pop3Proxy {
 
                             update();
                             break;
+
+                        default:
+                            write("-ERR command not found: " + inputArray[0]);
                     }
 
                 } catch (Exception e){
