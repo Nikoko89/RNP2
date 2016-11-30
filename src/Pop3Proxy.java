@@ -32,6 +32,7 @@ public class Pop3Proxy {
         mailBox = new MailBox();
         allMsgs = mailBox.getAllMails();
         MAX_CLIENTS = 3;
+        listenerSockets = new ArrayList<>();
         startServer();
 
     }
@@ -128,6 +129,8 @@ public class Pop3Proxy {
                         write("-ERR wrong username");
                     }
 
+                } else if (input.contains("QUIT")) {
+                    write("+OK dewey POP3 server signing off");
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -236,8 +239,13 @@ public class Pop3Proxy {
                             break;
 
                         case "QUIT":
+                            alive = false;
+
                             update();
                             break;
+
+                        default:
+                            write("-ERR command not found: " + inputArray[0]);
                     }
 
                 } catch (Exception e){
@@ -247,7 +255,17 @@ public class Pop3Proxy {
         }
 
         private synchronized void update() {
+            for(int i = 0; i < allMsgs.size(); i++) {
+                if (isFlagSet(i)) {
+                    allMsgs.remove(i);
+                }
+            }
 
+            if (allMsgs.isEmpty()) {
+                write("+OK dewey POP3 server signing off (maildrop empty)");
+            } else {
+                write("+OK dewey POP3 server signing off (" + allMsgs.size() + " messages left)");
+            }
         }
 
         private void write(String line) {
