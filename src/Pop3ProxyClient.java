@@ -1,6 +1,8 @@
 import java.io.*;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 
 public class Pop3ProxyClient extends Thread{
@@ -10,6 +12,7 @@ public class Pop3ProxyClient extends Thread{
     private final String pass;
     private final String server;
     private final int port;
+    private List<MailObject> mailObjectList;
     private OutputStream outputStream;
     private OutputStreamWriter outputStreamWriter;
     private InputStream inputStream;
@@ -24,6 +27,7 @@ public class Pop3ProxyClient extends Thread{
         this.pass = pop3.getProperty("password");
         this.server = pop3.getProperty("server");
         this.port = Integer.parseInt(pop3.getProperty("port"));
+        this.mailObjectList = new ArrayList<>();
     }
 
     public void run() {
@@ -55,8 +59,26 @@ public class Pop3ProxyClient extends Thread{
         String[] inputArray = writeAndRead("STAT").split(" ");
         int mailboxSize = Integer.parseInt(inputArray[1]);
 
-        for (int i = 0; i < mailboxSize; i++) {
+        for (int i = 1; i < mailboxSize; i++) {
+            String nextLine;
+            String content = "";
+            int size;
+            writeAndRead("RETR " + i);
+            try {
 
+                String[] informationArray = bufferedReader.readLine().split(" ");
+                size = Integer.parseInt(informationArray[1]);
+
+                while (!(nextLine = bufferedReader.readLine()).equals(".")) {
+                    content += nextLine;
+                }
+
+                MailObject mailObject = new MailObject(content, size);
+                mailObjectList.add(mailObject);
+
+            } catch(Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 
