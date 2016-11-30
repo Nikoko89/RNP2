@@ -17,9 +17,11 @@ public class Client extends Thread {
 
     public void run() {
         try {
-
+            System.out.println("clientSocket aufbauen");
             clientSocket = new Socket(host, Integer.parseInt(port));
+            System.out.println("clientSocket aufgebaut");
             try {
+
                 clientSocket.setKeepAlive(true);
             } catch (SocketException e) {
                 System.err.println("Could not set to keep the socket alive");
@@ -45,9 +47,12 @@ public class Client extends Thread {
                 //Nachricht senden
                 if (System.in.available() > 0) {
                     String eingabe = userInput.readLine() + '\n';
+                    System.out.println("eingabe gelesen");
                     bufferedWriter.write(eingabe);
+                    System.out.println("eingabe gesendet");
                     bufferedWriter.newLine();
                     bufferedWriter.flush();
+                    System.out.println("bereit für neue eingabe");
 
 
                 }

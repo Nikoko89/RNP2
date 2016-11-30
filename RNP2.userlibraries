@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<eclipse-userlibraries>
+  <library name="activation">
+    <archive path="/Users/Nikoko/Downloads/jaf-1.1.1/activation.jar" />
+  </library>
+  <library name="mail">
+    <archive path="/Users/Nikoko/Downloads/javamail-1.4.5/mail.jar" />
+  </library>
+</eclipse-userlibraries>
+
