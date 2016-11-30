@@ -25,7 +25,9 @@ public class Pop3Proxy {
         PropReader prop = new PropReader("pop3.properties");
         Properties pop3 = prop.getProp();
         this.user = pop3.getProperty("user");
+        System.out.println(user);
         this.pass = pop3.getProperty("password");
+        System.out.println(pass);
         this.port = Integer.valueOf(pop3.getProperty("port"));
         mailBox = new MailBox();
         allMsgs = mailBox.getAllMails();
@@ -114,7 +116,6 @@ public class Pop3Proxy {
                     String[] userName = input.split(" ");
                     if (userName[1].equals(user)) {
                         write("+OK Please enter password");
-
                         input = bufferedReader.readLine();
                         String[] password = input.split(" ");
                         if (password[1].equals(pass)) {
