@@ -30,6 +30,7 @@ public class Pop3Proxy {
         mailBox = new MailBox();
         allMsgs = mailBox.getAllMails();
         MAX_CLIENTS = 3;
+        listenerSockets = new ArrayList<>();
         startServer();
 
     }
@@ -236,7 +237,7 @@ public class Pop3Proxy {
 
                         case "QUIT":
                             alive = false;
-                            
+
                             update();
                             break;
                     }
