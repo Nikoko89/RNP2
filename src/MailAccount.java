@@ -1,3 +1,4 @@
+import java.util.Properties;
 
 public class MailAccount {
 
@@ -6,11 +7,11 @@ public class MailAccount {
     private final String host;
     private final int port;
 
-    public MailAccount(String user, String password, String host, int port) {
-        this.user = user;
-        this.password = password;
-        this.host = host;
-        this.port = port;
+    public MailAccount(Properties acc) {
+        this.user = acc.getProperty("user");
+        this.password = acc.getProperty("password");
+        this.host = acc.getProperty("host");
+        this.port = Integer.parseInt(acc.getProperty("port"));
     }
 
     public String getUser() {
@@ -19,6 +20,7 @@ public class MailAccount {
     }
 
     public String getPassword() {
+
         return password;
     }
 

@@ -1,18 +1,15 @@
+import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils;
+
 import java.io.*;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 
-public class Pop3ProxyClient extends Thread{
+public class Pop3ProxyClient extends Thread {
 
     private Socket clientSocket;
-    private final String user;
-    private final String pass;
-    private final String server;
-    private final int port;
-    private List<MailObject> mailObjectList;
+    private List<MailObject> mailObjectList = new ArrayList<>();
+    private List<MailAccount> accounts;
     private OutputStream outputStream;
     private OutputStreamWriter outputStreamWriter;
     private InputStream inputStream;
@@ -20,91 +17,118 @@ public class Pop3ProxyClient extends Thread{
     private BufferedReader bufferedReader;
 
 
-    public Pop3ProxyClient() {
-        PropReader prop = new PropReader("account1.properties");
-        Properties pop3 = prop.getProp();
-        this.user = pop3.getProperty("user");
-        this.pass = pop3.getProperty("password");
-        this.server = pop3.getProperty("server");
-        this.port = Integer.parseInt(pop3.getProperty("port"));
-        this.mailObjectList = new ArrayList<>();
+    public Pop3ProxyClient(List<MailAccount> acc) {
+        this.accounts = acc;
     }
 
+    @Override
     public void run() {
         try {
-            clientSocket = new Socket(server, port);
+            for (MailAccount account : accounts) {
+                connectAccount(account);
+                serverOutput();
+                authToMailServer(account);
+                checkInbox();
+                quit();
+                closeSocket();
+            }
+        } catch (IOException e) {
+            System.err.println("Could not print the number of messages");
+        }
 
+
+    }
+
+    public void connectAccount(MailAccount acc) {
+        try {
+            clientSocket = new Socket(acc.getHost(), acc.getPort());
             outputStream = clientSocket.getOutputStream();
             outputStreamWriter = new OutputStreamWriter(outputStream, StandardCharsets.UTF_8);
             inputStream = clientSocket.getInputStream();
             inputStreamReader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
             bufferedReader = new BufferedReader(inputStreamReader);
-
-            authToMailServer();
-            checkInbox();
-
         } catch (Exception e) {
             e.printStackTrace();
         }
-
     }
 
-    public void authToMailServer() {
-        writeAndRead("USER " + user);
-        writeAndRead("PASS " + pass);
-
+    public void authToMailServer(MailAccount acc) throws IOException {
+        clientInput("USER " + acc.getUser());
+        clientInput("PASS " + acc.getPassword());
     }
 
-    public void checkInbox() {
-        String[] inputArray = writeAndRead("STAT").split(" ");
-        int mailboxSize = Integer.parseInt(inputArray[1]);
+    private void deleteMail(int index) throws IOException{
+        clientInput("DELE " + index);
+    }
 
-        for (int i = 1; i < mailboxSize; i++) {
+    private int countMails() throws IOException {
+        String[] result = clientInput("STAT").split(" ");
+        int totalMails = Integer.valueOf(result[1]);
+        return totalMails;
+    }
+
+    private void closeSocket() throws IOException {
+        clientSocket.close();
+    }
+
+    private void quit() throws IOException {
+        clientInput("QUIT");
+    }
+
+    private void checkInbox() throws IOException {
+        int mailboxSize = countMails();
+        for (int i = 1; i <= mailboxSize; i++) {
+            boolean start = true;
+            HashMap<String, String> message = new HashMap<>();
             String nextLine;
             String content = "";
-            int size;
-            writeAndRead("RETR " + i);
+            String[] informationArray = clientInput("RETR " + i).split(" ");
             try {
-
-                String[] informationArray = bufferedReader.readLine().split(" ");
-                size = Integer.parseInt(informationArray[1]);
-
+                message.put("Size", informationArray[1]);
                 while (!(nextLine = bufferedReader.readLine()).equals(".")) {
-                    content += nextLine;
+                    String msg[] = nextLine.split(": ");
+                    if(msg.length > 1) {
+                        message.put(msg[0], msg[1]);
+                    }
+
+                    if (!msg[0].equals("") && msg.length == 1){
+                        content = content + msg[0] + "\r\n";
+                    }
                 }
+                message.put("Content", content);
+                System.out.println("Jetzt kommt die Nachricht");
+                for (String name: message.keySet()){
 
-                MailObject mailObject = new MailObject(content, size);
-                mailObjectList.add(mailObject);
-
-            } catch(Exception e) {
+                    String key =name.toString();
+                    String value = message.get(name).toString();
+                    System.out.println(key + " " + value);
+                }
+                mailObjectList.add(new MailObject(message));
+                //deleteMail(i);
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }
     }
 
-
-
-    private String writeAndRead(String line) {
-        line = line + "\r\n";
-        String answer = "";
-        try {
-            outputStreamWriter.write(line);
-            outputStreamWriter.flush();
-
-            answer = bufferedReader.readLine();
-            System.out.println(answer);
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return answer;
+    public List<MailObject> getNewMails(){
+        return mailObjectList;
     }
 
-    public static void main(String[] args) {
+    private String clientInput(String line) throws IOException {
+        line = line + "\r\n";
+        outputStreamWriter.write(line);
+        outputStreamWriter.flush();
+        return serverOutput();
+    }
 
-        Thread clientthread = new Pop3ProxyClient();
-        clientthread.run();
-
+    private String serverOutput() throws IOException {
+        String input = "";
+        input = bufferedReader.readLine();
+        if (input == null) {
+        }
+        System.out.println(input);
+        return input;
     }
 
 }
