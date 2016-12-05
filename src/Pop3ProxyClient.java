@@ -7,6 +7,7 @@ import java.util.*;
 
 public class Pop3ProxyClient extends Thread {
 
+    private final Pop3Proxy pop;
     private Socket clientSocket;
     private List<MailObject> mailObjectList = new ArrayList<>();
     private List<MailAccount> accounts;
@@ -17,7 +18,8 @@ public class Pop3ProxyClient extends Thread {
     private BufferedReader bufferedReader;
 
 
-    public Pop3ProxyClient(List<MailAccount> acc) {
+    public Pop3ProxyClient(List<MailAccount> acc, Pop3Proxy pop) {
+        this.pop = pop;
         this.accounts = acc;
     }
 
@@ -109,9 +111,11 @@ public class Pop3ProxyClient extends Thread {
                 e.printStackTrace();
             }
         }
+        System.out.println(mailObjectList.size());
     }
 
     public List<MailObject> getNewMails(){
+
         return mailObjectList;
     }
 
