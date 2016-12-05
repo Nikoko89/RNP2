@@ -7,8 +7,9 @@ import java.util.*;
 
 public class Pop3ProxyClient extends Thread {
 
+    private MessageStore allMessages;
     private Socket clientSocket;
-    private List<MailObject> mailObjectList = new ArrayList<>();
+    //private List<MailObject> mailObjectList = new ArrayList<>();
     private List<MailAccount> accounts;
     private OutputStream outputStream;
     private OutputStreamWriter outputStreamWriter;
@@ -17,7 +18,8 @@ public class Pop3ProxyClient extends Thread {
     private BufferedReader bufferedReader;
 
 
-    public Pop3ProxyClient(List<MailAccount> acc) {
+    public Pop3ProxyClient(List<MailAccount> acc, MessageStore allMessages) {
+        this.allMessages = allMessages;
         this.accounts = acc;
     }
 
@@ -41,8 +43,7 @@ public class Pop3ProxyClient extends Thread {
                 }
             }
 
-        }, 0, 10 * 1000);
-
+        }, 0, 10 * 3000);
     }
 
     public void connectAccount(MailAccount acc) {
@@ -104,24 +105,25 @@ public class Pop3ProxyClient extends Thread {
                 message.put("Content", content);
                 //System.out.println("Jetzt kommt die Nachricht");
                 for (String name : message.keySet()) {
-
                     String key = name.toString();
                     String value = message.get(name).toString();
                     //System.out.println(key + " " + value);
                 }
-                mailObjectList.add(new MailObject(message));
+                allMessages.getMessages().add(new MailObject(message));
+                //mailObjectList.add();
+                //System.out.println(mailObjectList.size());
                 deleteMail(i);
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
 
-        //System.out.println(mailObjectList.size());
+        System.out.println(allMessages.getMessages().size() + " soviel");
     }
 
     public List<MailObject> getNewMails() {
-
-        return mailObjectList;
+        System.out.println(" ich hole jetzt " + allMessages.getMessages().size() + " mails");
+        return allMessages.getMessages();
     }
 
     private String clientInput(String line) throws IOException {
@@ -136,7 +138,7 @@ public class Pop3ProxyClient extends Thread {
         input = bufferedReader.readLine();
         if (input == null) {
         }
-        //System.out.println(input);
+        System.out.println(input + " thunder");
         return input;
     }
 

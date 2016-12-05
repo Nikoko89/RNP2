@@ -10,9 +10,10 @@ public class Start {
         List<MailAccount> accounts = new ArrayList<>();
         accounts.add(new MailAccount(acc1));
         accounts.add(new MailAccount(acc2));
-        Pop3ProxyClient proxy = new Pop3ProxyClient(accounts);
+        MessageStore allMessages = new MessageStore();
+        Pop3ProxyClient proxy = new Pop3ProxyClient(accounts, allMessages);
         Thread client = new Thread(proxy);
         client.start();
-        Pop3Proxy pop = new Pop3Proxy(proxy);
+        Pop3Proxy pop = new Pop3Proxy(allMessages);
     }
 }

@@ -11,22 +11,19 @@ public class Pop3Proxy {
     private final String user;
     private final String pass;
     private final int port;
-    private List<MailObject> allMsgs = new ArrayList<>();
+    private MessageStore allMSG;
     private ServerSocket server;
     private boolean serverAlive;
     private List<ProxyHelper> listenerSockets;
     private final int MAX_CLIENTS;
-    private Pop3ProxyClient prox;
 
-    public Pop3Proxy(Pop3ProxyClient prox) {
-        this.prox = prox;
+    public Pop3Proxy(MessageStore allMSG) {
+        this.allMSG = allMSG;
         PropReader prop = new PropReader("pop3.properties");
         Properties pop3 = prop.getProp();
         this.user = pop3.getProperty("user");
         this.pass = pop3.getProperty("password");
         this.port = Integer.valueOf(pop3.getProperty("port"));
-        allMsgs = prox.getNewMails();
-
         MAX_CLIENTS = 3;
         listenerSockets = new ArrayList<>();
 
@@ -46,9 +43,8 @@ public class Pop3Proxy {
 
             if (listenerSockets.size() < MAX_CLIENTS) {
                 try {
-                    System.out.println(allMsgs.size() + "hallo");
+
                     Socket clientS = server.accept();
-                    System.out.println("hallsasasssssssssssssaxccccvvvvvvvvvvvvvvvvp");
                     ProxyHelper clientListener;
                     clientListener = new ProxyHelper(clientS);
 
@@ -68,6 +64,16 @@ public class Pop3Proxy {
         }
     }
 
+    public synchronized void remove() {
+        for (int i = 0; i < listenerSockets.size(); i++) {
+            if (listenerSockets.get(i).alive == false) {
+                listenerSockets.remove(i);
+                System.out.println("A client sad BYE and left");
+                System.out.println("Clients left: " + listenerSockets.size());
+            }
+        }
+    }
+
     public class ProxyHelper extends Thread {
         private Socket clientSocket;
         private InputStream inputStream;
@@ -83,6 +89,11 @@ public class Pop3Proxy {
         public ProxyHelper(Socket socket) {
             super("ProxyHelper");
             clientSocket = socket;
+            try {
+                clientSocket.setKeepAlive(true);
+            } catch (SocketException e) {
+                System.err.println("Could not set to keep the socket alive");
+            }
         }
 
         public void run() {
@@ -146,17 +157,18 @@ public class Pop3Proxy {
         private synchronized void transaction() {
 
             while (alive) {
+                System.out.println(allMSG.getMessages().size() + " Server");
                 try {
                     String inputLine = bufferedReader.readLine();
-                    System.out.print(inputLine);
-                    if(inputLine == null){
+                    //System.out.print(inputLine);
+                    if (inputLine == null) {
 
                         break;
                     }
                     String[] inputArray = inputLine.split(" ");
                     int octetSize = 0;
                     int messageAmount = 0;
-                    for (MailObject msg : allMsgs) {
+                    for (MailObject msg : allMSG.getMessages()) {
                         try {
                             if (!msg.getDeleteFlag()) {
                                 octetSize += msg.getFileSize();
@@ -175,21 +187,38 @@ public class Pop3Proxy {
                             write("+OK " + messageAmount + " " + octetSize);
                             break;
 
+                        case "UIDL":
+                            if (inputArray.length == 1) {
+                                write("+OK");
+                                for (cursor = 0; cursor < messageAmount; cursor++) {
+                                    System.out.println((cursor + 1) + " " + allMSG.getMessages().get(cursor).getID());
+                                    write((cursor + 1) + " " + allMSG.getMessages().get(cursor).getID());
+                                }
+                                write(".");
+                            } else {
+                                cursor = Integer.parseInt(inputArray[1]);
+                                if (allMSG.getMessages().get(cursor - 1) == null || allMSG.getMessages().get(cursor - 1).getDeleteFlag()) {
+                                    write("-ERR no such message, only " + messageAmount + " messages in maildrop");
+                                }
+                                write("+OK " + cursor + " " + allMSG.getMessages().get(cursor - 1).getID());
+                            }
+                            break;
+
                         case "LIST":
 
                             if (inputArray.length == 1) {
                                 write("+OK " + messageAmount + " messages (" + octetSize + " octets)");
 
                                 for (cursor = 0; cursor < messageAmount; cursor++) {
-                                    write("" + (cursor + 1) + " " + allMsgs.get(cursor).getFileSize());
+                                    write("" + (cursor + 1) + " " + allMSG.getMessages().get(cursor).getFileSize());
                                 }
                                 write(".");
                             } else {
                                 cursor = Integer.parseInt(inputArray[1]);
-                                if (allMsgs.get(cursor - 1) == null || allMsgs.get(cursor-1).getDeleteFlag()) {
+                                if (allMSG.getMessages().get(cursor - 1) == null || allMSG.getMessages().get(cursor - 1).getDeleteFlag()) {
                                     write("-ERR no such message, only " + messageAmount + " messages in maildrop");
                                 }
-                                write("+OK " + cursor + " " + allMsgs.get(cursor - 1).getFileSize());
+                                write("+OK " + cursor + " " + allMSG.getMessages().get(cursor - 1).getFileSize());
                             }
                             break;
 
@@ -198,19 +227,20 @@ public class Pop3Proxy {
                                 write("-ERR pls enter message");
                             } else {
                                 cursor = Integer.parseInt(inputArray[1]);
-                                if (allMsgs.get(cursor - 1) == null || allMsgs.get(cursor - 1).getDeleteFlag()) {
+                                if (allMSG.getMessages().get(cursor - 1) == null || allMSG.getMessages().get(cursor - 1).getDeleteFlag()) {
                                     write("-ERR no such message, only " + messageAmount + " messages in maildrop");
                                 } else {
-                                    write("+OK " + allMsgs.get(cursor - 1).getFileSize() + " octets");
-                                    write("From: " + "" + allMsgs.get(cursor - 1).getFrom());
-                                    write("Date: " + "" + allMsgs.get(cursor - 1).getDate());
-                                    write("Message-ID: " + "" + allMsgs.get(cursor - 1).getID());
-                                    write("Subject: " + "" + allMsgs.get(cursor - 1).getSubject());
-                                    write("To: " + "" + allMsgs.get(cursor - 1).getTo());
+                                    write("+OK " + allMSG.getMessages().get(cursor - 1).getFileSize() + " octets");
+                                    write("From: " + "" + allMSG.getMessages().get(cursor - 1).getFrom());
+                                    write("Date: " + "" + allMSG.getMessages().get(cursor - 1).getDate());
+                                    write("Message-ID: " + "" + allMSG.getMessages().get(cursor - 1).getID());
+                                    write("Subject: " + "" + allMSG.getMessages().get(cursor - 1).getSubject());
+                                    write("To: " + "" + allMSG.getMessages().get(cursor - 1).getTo());
                                     write("");
-                                    write(allMsgs.get(cursor - 1).getContent());
+                                    write(allMSG.getMessages().get(cursor - 1).getContent());
                                     write(".");
                                 }
+
                             }
                             break;
 
@@ -218,21 +248,21 @@ public class Pop3Proxy {
                             if (inputArray.length == 1) {
                                 write("-ERR pls enter message");
                             } else {
-                                cursor = Integer.parseInt(inputArray[1]);
-                                if (allMsgs.get(cursor - 1) == null) {
+                                cursor = Integer.valueOf(inputArray[1]);
+                                if (allMSG.getMessages().get(cursor - 1) == null) {
                                     write("-ERR no such message, only " + messageAmount + " messages in maildrop");
-                                } else if (allMsgs.get(cursor - 1).getDeleteFlag()) {
+                                } else if (allMSG.getMessages().get(cursor - 1).getDeleteFlag()) {
                                     write("-ERR message " + cursor + " already deleted");
                                 } else {
-                                    allMsgs.get(cursor - 1).setDeleteFlag(false);
+                                    allMSG.getMessages().get(cursor - 1).setDeleteFlag(true);
                                     write("+OK message " + cursor + " deleted");
-                                    allMsgs.sort((m1, m2) -> {
-                                        int result = 0;
-                                        if (m2.getDeleteFlag()) {
-                                            result = -1;
-                                        }
-                                        return result;
-                                    });
+//                                    allMsgs.sort((m1, m2) -> {
+//                                        int result = 0;
+//                                        if (m2.getDeleteFlag()) {
+//                                            result = -1;
+//                                        }
+//                                        return result;
+//                                    });
                                 }
                             }
                             break;
@@ -242,17 +272,16 @@ public class Pop3Proxy {
                             break;
 
                         case "RSET":
-                            for (MailObject msg : allMsgs) {
+                            for (MailObject msg : allMSG.getMessages()) {
                                 if (msg.getDeleteFlag()) {
                                     msg.setDeleteFlag(false);
                                 }
                             }
-                            write("+OK maildrop has " + allMsgs.size() + " messages");
+                            write("+OK maildrop has " + allMSG.getMessages().size() + " messages");
                             break;
 
                         case "QUIT":
                             alive = false;
-
                             update();
                             break;
 
@@ -261,22 +290,51 @@ public class Pop3Proxy {
                     }
 
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    System.err.println("Client disconnected itself");
+                    try {
+                        clientSocket.setKeepAlive(false);
+                        remove();
+                        try {
+                            bufferedReader.close();
+                            inputStream.close();
+                            inputStreamReader.close();
+                            outputStream.close();
+                            outputStreamWriter.close();
+                            clientSocket.close();
+                        } catch (IOException e1) {
+                            System.err.println("Could not close Stream");
+                        }
+
+                    } catch (SocketException e1) {
+                        System.err.println("Could not set to keep the socket not alive");
+                    }
+
                 }
             }
         }
 
-        private synchronized void update() {
-            for (int i = 0; i < allMsgs.size(); i++) {
-                if (allMsgs.get(i).getDeleteFlag()) {
-                    allMsgs.remove(i);
+        private void update() {
+            for (int i = 0; i < allMSG.getMessages().size(); i++) {
+                if (allMSG.getMessages().get(i).getDeleteFlag()) {
+                    allMSG.getMessages().remove(i);
                 }
             }
-
-            if (allMsgs.isEmpty()) {
+            if (allMSG.getMessages().isEmpty()) {
                 write("+OK dewey POP3 server signing off (maildrop empty)");
             } else {
-                write("+OK dewey POP3 server signing off (" + allMsgs.size() + " messages left)");
+                write("+OK dewey POP3 server signing off (" + allMSG.getMessages().size() + " messages left)");
+            }
+            try {
+                clientSocket.setKeepAlive(false);
+                remove();
+                bufferedReader.close();
+                inputStream.close();
+                inputStreamReader.close();
+                outputStream.close();
+                outputStreamWriter.close();
+                clientSocket.close();
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
 
@@ -291,8 +349,5 @@ public class Pop3Proxy {
             }
         }
 
-        public void setAllMsg(List<MailObject> newMsg){
-            allMsgs = newMsg;
-        }
     }
 }
