@@ -202,7 +202,14 @@ public class Pop3Proxy {
                                     write("-ERR no such message, only " + messageAmount + " messages in maildrop");
                                 } else {
                                     write("+OK " + allMsgs.get(cursor - 1).getFileSize() + " octets");
+                                    write("From: " + "" + allMsgs.get(cursor - 1).getFrom());
+                                    write("Date: " + "" + allMsgs.get(cursor - 1).getDate());
+                                    write("Message-ID: " + "" + allMsgs.get(cursor - 1).getID());
+                                    write("Subject: " + "" + allMsgs.get(cursor - 1).getSubject());
+                                    write("To: " + "" + allMsgs.get(cursor - 1).getTo());
+                                    write("");
                                     write(allMsgs.get(cursor - 1).getContent());
+                                    write(".");
                                 }
                             }
                             break;

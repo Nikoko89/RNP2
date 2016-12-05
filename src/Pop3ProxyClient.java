@@ -110,7 +110,7 @@ public class Pop3ProxyClient extends Thread {
                     //System.out.println(key + " " + value);
                 }
                 mailObjectList.add(new MailObject(message));
-                //deleteMail(i);
+                deleteMail(i);
             } catch (Exception e) {
                 e.printStackTrace();
             }
