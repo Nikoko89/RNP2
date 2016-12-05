@@ -7,7 +7,6 @@ import java.util.*;
 
 public class Pop3ProxyClient extends Thread {
 
-    private final Pop3Proxy pop;
     private Socket clientSocket;
     private List<MailObject> mailObjectList = new ArrayList<>();
     private List<MailAccount> accounts;
@@ -18,26 +17,31 @@ public class Pop3ProxyClient extends Thread {
     private BufferedReader bufferedReader;
 
 
-    public Pop3ProxyClient(List<MailAccount> acc, Pop3Proxy pop) {
-        this.pop = pop;
+    public Pop3ProxyClient(List<MailAccount> acc) {
         this.accounts = acc;
     }
 
     @Override
     public void run() {
-        try {
-            for (MailAccount account : accounts) {
-                connectAccount(account);
-                serverOutput();
-                authToMailServer(account);
-                checkInbox();
-                quit();
-                closeSocket();
+        Timer timer = new Timer();
+        timer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                try {
+                    for (MailAccount account : accounts) {
+                        connectAccount(account);
+                        serverOutput();
+                        authToMailServer(account);
+                        checkInbox();
+                        quit();
+                        closeSocket();
+                    }
+                } catch (IOException e) {
+                    System.err.println("Could not print the number of messages");
+                }
             }
-        } catch (IOException e) {
-            System.err.println("Could not print the number of messages");
-        }
 
+        }, 0, 10 * 1000);
 
     }
 
@@ -59,7 +63,7 @@ public class Pop3ProxyClient extends Thread {
         clientInput("PASS " + acc.getPassword());
     }
 
-    private void deleteMail(int index) throws IOException{
+    private void deleteMail(int index) throws IOException {
         clientInput("DELE " + index);
     }
 
@@ -89,21 +93,21 @@ public class Pop3ProxyClient extends Thread {
                 message.put("Size", informationArray[1]);
                 while (!(nextLine = bufferedReader.readLine()).equals(".")) {
                     String msg[] = nextLine.split(": ");
-                    if(msg.length > 1) {
+                    if (msg.length > 1) {
                         message.put(msg[0], msg[1]);
                     }
 
-                    if (!msg[0].equals("") && msg.length == 1){
+                    if (!msg[0].equals("") && msg.length == 1) {
                         content = content + msg[0] + "\r\n";
                     }
                 }
                 message.put("Content", content);
-                System.out.println("Jetzt kommt die Nachricht");
-                for (String name: message.keySet()){
+                //System.out.println("Jetzt kommt die Nachricht");
+                for (String name : message.keySet()) {
 
-                    String key =name.toString();
+                    String key = name.toString();
                     String value = message.get(name).toString();
-                    System.out.println(key + " " + value);
+                    //System.out.println(key + " " + value);
                 }
                 mailObjectList.add(new MailObject(message));
                 //deleteMail(i);
@@ -111,10 +115,11 @@ public class Pop3ProxyClient extends Thread {
                 e.printStackTrace();
             }
         }
-        System.out.println(mailObjectList.size());
+
+        //System.out.println(mailObjectList.size());
     }
 
-    public List<MailObject> getNewMails(){
+    public List<MailObject> getNewMails() {
 
         return mailObjectList;
     }
@@ -131,7 +136,7 @@ public class Pop3ProxyClient extends Thread {
         input = bufferedReader.readLine();
         if (input == null) {
         }
-        System.out.println(input);
+        //System.out.println(input);
         return input;
     }
 

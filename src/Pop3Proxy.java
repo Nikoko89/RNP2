@@ -18,14 +18,15 @@ public class Pop3Proxy {
     private final int MAX_CLIENTS;
     private Pop3ProxyClient prox;
 
-    public Pop3Proxy() {
+    public Pop3Proxy(Pop3ProxyClient prox) {
+        this.prox = prox;
         PropReader prop = new PropReader("pop3.properties");
         Properties pop3 = prop.getProp();
         this.user = pop3.getProperty("user");
         this.pass = pop3.getProperty("password");
         this.port = Integer.valueOf(pop3.getProperty("port"));
         allMsgs = prox.getNewMails();
-        System.out.println(allMsgs.size());
+
         MAX_CLIENTS = 3;
         listenerSockets = new ArrayList<>();
 
@@ -40,14 +41,13 @@ public class Pop3Proxy {
         } catch (IOException e) {
             System.err.println("Could not connect to Serversocket");
         }
-        Socket clientS = null;
         serverAlive = true;
         while (serverAlive) {
 
             if (listenerSockets.size() < MAX_CLIENTS) {
                 try {
-
-                    clientS = server.accept();
+                    System.out.println(allMsgs.size() + "hallo");
+                    Socket clientS = server.accept();
                     System.out.println("hallsasasssssssssssssaxccccvvvvvvvvvvvvvvvvp");
                     ProxyHelper clientListener;
                     clientListener = new ProxyHelper(clientS);
@@ -87,6 +87,7 @@ public class Pop3Proxy {
 
         public void run() {
             try {
+                System.out.println("Bin jetzt vorm stream");
                 inputStream = clientSocket.getInputStream();
                 inputStreamReader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
                 bufferedReader = new BufferedReader(inputStreamReader);
@@ -94,6 +95,7 @@ public class Pop3Proxy {
                 outputStream = clientSocket.getOutputStream();
                 outputStreamWriter = new OutputStreamWriter(outputStream, StandardCharsets.UTF_8);
                 write("+OK POP3 server ready");
+                System.out.println("kurz vorm auth");
                 authenticate();
 
 
@@ -106,19 +108,22 @@ public class Pop3Proxy {
         private void authenticate() {
             try {
                 String input = bufferedReader.readLine();
-
                 if (input.contains("CAPA") || input.contains("AUTH")) {
                     capa();
+                    authenticate();
                 } else if (input.contains("USER")) {
+
                     String[] userName = input.split(" ");
                     if (userName[1].equals(user)) {
                         write("+OK Please enter password");
+
                         input = bufferedReader.readLine();
                         String[] password = input.split(" ");
                         if (password[1].equals(pass)) {
                             write("+OK mailbox locked and ready");
                             transaction();
                         } else {
+
                             write("-ERR Wrong Password");
                         }
                     } else {
@@ -143,6 +148,11 @@ public class Pop3Proxy {
             while (alive) {
                 try {
                     String inputLine = bufferedReader.readLine();
+                    System.out.print(inputLine);
+                    if(inputLine == null){
+
+                        break;
+                    }
                     String[] inputArray = inputLine.split(" ");
                     int octetSize = 0;
                     int messageAmount = 0;
@@ -158,18 +168,22 @@ public class Pop3Proxy {
                         }
                     }
                     int cursor;
+                    System.out.println(Arrays.toString(inputArray));
                     switch (inputArray[0]) {
+
                         case "STAT":
                             write("+OK " + messageAmount + " " + octetSize);
                             break;
 
                         case "LIST":
-                            if (inputArray[1] == null) {
-                                write("+OK " + messageAmount + "messages  (" + octetSize + ")");
+
+                            if (inputArray.length == 1) {
+                                write("+OK " + messageAmount + " messages (" + octetSize + " octets)");
 
                                 for (cursor = 0; cursor < messageAmount; cursor++) {
                                     write("" + (cursor + 1) + " " + allMsgs.get(cursor).getFileSize());
                                 }
+                                write(".");
                             } else {
                                 cursor = Integer.parseInt(inputArray[1]);
                                 if (allMsgs.get(cursor - 1) == null || allMsgs.get(cursor-1).getDeleteFlag()) {
@@ -180,7 +194,7 @@ public class Pop3Proxy {
                             break;
 
                         case "RETR":
-                            if (inputArray[1] == null) {
+                            if (inputArray.length == 1) {
                                 write("-ERR pls enter message");
                             } else {
                                 cursor = Integer.parseInt(inputArray[1]);
@@ -194,7 +208,7 @@ public class Pop3Proxy {
                             break;
 
                         case "DELE":
-                            if (inputArray[1] == null) {
+                            if (inputArray.length == 1) {
                                 write("-ERR pls enter message");
                             } else {
                                 cursor = Integer.parseInt(inputArray[1]);
@@ -262,11 +276,16 @@ public class Pop3Proxy {
         private void write(String line) {
             line = line + "\r\n";
             try {
+                System.out.println(line);
                 outputStreamWriter.write(line);
                 outputStreamWriter.flush();
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        }
+
+        public void setAllMsg(List<MailObject> newMsg){
+            allMsgs = newMsg;
         }
     }
 }
