@@ -2,7 +2,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
-public class Start {
+public class InitSession {
 
     public static void main(String[] args){
         Properties acc1 = new PropReader("account1.properties").getProp();
@@ -14,6 +14,6 @@ public class Start {
         Pop3ProxyClient proxy = new Pop3ProxyClient(accounts, allMessages);
         Thread client = new Thread(proxy);
         client.start();
-        Pop3Proxy pop = new Pop3Proxy(allMessages);
+        new Pop3Proxy(allMessages);
     }
 }

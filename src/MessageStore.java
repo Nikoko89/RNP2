@@ -1,9 +1,6 @@
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Created by Nikoko on 05.12.16.
- */
 public class MessageStore {
 
     List<MailObject> messages = new ArrayList<>();
