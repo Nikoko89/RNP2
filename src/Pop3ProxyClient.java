@@ -1,5 +1,3 @@
-import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils;
-
 import java.io.*;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
@@ -9,7 +7,6 @@ public class Pop3ProxyClient extends Thread {
 
     private MessageStore allMessages;
     private Socket clientSocket;
-    //private List<MailObject> mailObjectList = new ArrayList<>();
     private List<MailAccount> accounts;
     private OutputStream outputStream;
     private OutputStreamWriter outputStreamWriter;
@@ -39,7 +36,7 @@ public class Pop3ProxyClient extends Thread {
                         closeSocket();
                     }
                 } catch (IOException e) {
-                    System.err.println("Could not print the number of messages");
+                    System.err.println("Could not get messages from Mailserver");
                 }
             }
 
@@ -85,45 +82,34 @@ public class Pop3ProxyClient extends Thread {
     private void checkInbox() throws IOException {
         int mailboxSize = countMails();
         for (int i = 1; i <= mailboxSize; i++) {
-            boolean start = true;
             HashMap<String, String> message = new HashMap<>();
             String nextLine;
             String content = "";
             String[] informationArray = clientInput("RETR " + i).split(" ");
             try {
                 message.put("Size", informationArray[1]);
+                boolean startLine = true;
                 while (!(nextLine = bufferedReader.readLine()).equals(".")) {
+                    System.out.println(nextLine + "diese");
                     String msg[] = nextLine.split(": ");
                     if (msg.length > 1) {
                         message.put(msg[0], msg[1]);
                     }
 
-                    if (!msg[0].equals("") && msg.length == 1) {
+                    if ((msg[0].equals("") || msg.length == 1) && startLine == false) {
                         content = content + msg[0] + "\r\n";
+                    }
+                    if (msg[0].equals("")){
+                        startLine = false;
                     }
                 }
                 message.put("Content", content);
-                //System.out.println("Jetzt kommt die Nachricht");
-                for (String name : message.keySet()) {
-                    String key = name.toString();
-                    String value = message.get(name).toString();
-                    //System.out.println(key + " " + value);
-                }
                 allMessages.getMessages().add(new MailObject(message));
-                //mailObjectList.add();
-                //System.out.println(mailObjectList.size());
                 deleteMail(i);
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
-
-        System.out.println(allMessages.getMessages().size() + " soviel");
-    }
-
-    public List<MailObject> getNewMails() {
-        System.out.println(" ich hole jetzt " + allMessages.getMessages().size() + " mails");
-        return allMessages.getMessages();
     }
 
     private String clientInput(String line) throws IOException {
@@ -138,8 +124,7 @@ public class Pop3ProxyClient extends Thread {
         input = bufferedReader.readLine();
         if (input == null) {
         }
-        System.out.println(input + " thunder");
+        System.out.println(input);
         return input;
     }
-
 }
