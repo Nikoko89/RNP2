@@ -16,13 +16,12 @@ public class Pop3Proxy {
     private List<ProxyHelper> listenerSockets;
     private final int MAX_CLIENTS;
 
-    public Pop3Proxy(MessageStore allMSG) {
+    public Pop3Proxy(MessageStore allMSG, Properties pop3) {
         this.allMSG = allMSG;
-        PropReader prop = new PropReader("pop3.properties");
-        Properties pop3 = prop.getProp();
-        this.user = pop3.getProperty("user");
-        this.pass = pop3.getProperty("password");
-        this.port = Integer.valueOf(pop3.getProperty("port"));
+        Properties pop3acc = pop3;
+        this.user = pop3acc.getProperty("user");
+        this.pass = pop3acc.getProperty("password");
+        this.port = Integer.valueOf(pop3acc.getProperty("port"));
         MAX_CLIENTS = 3;
         listenerSockets = new ArrayList<>();
 

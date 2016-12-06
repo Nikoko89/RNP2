@@ -7,6 +7,7 @@ public class InitSession {
     public static void main(String[] args){
         Properties acc1 = new PropReader("account1.properties").getProp();
         Properties acc2 = new PropReader("account2.properties").getProp();
+        Properties pop3 = new PropReader("pop3.properties").getProp();
         List<MailAccount> accounts = new ArrayList<>();
         accounts.add(new MailAccount(acc1));
         accounts.add(new MailAccount(acc2));
@@ -14,6 +15,6 @@ public class InitSession {
         Pop3ProxyClient proxy = new Pop3ProxyClient(accounts, allMessages);
         Thread client = new Thread(proxy);
         client.start();
-        new Pop3Proxy(allMessages);
+        new Pop3Proxy(allMessages, pop3);
     }
 }

@@ -9,7 +9,4 @@ public class MessageStore {
         return messages;
     }
 
-    public void setMessages(List<MailObject> mess){
-        messages = mess;
-    }
 }
